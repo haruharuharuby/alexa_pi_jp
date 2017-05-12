@@ -5,3 +5,5 @@ translation/secual-agent-jp-cd8ae87172a1.json
 .python-version
 
 __pycache__
+
+*.wav
