@@ -1,0 +1,7 @@
+google-api-python-client
+google-cloud-speech
+google-cloud-translate
+boto3
+
+#pyaudio depends on portaudio
+pyaudio
