@@ -7,8 +7,6 @@ RATE = 16000
 AUDIO_FILE_PATH = './recording.wav'
 CHUNK = 1024
 
-recorder = Recorder()
-
 class RingBuffer(object):
     """Ring buffer to hold audio from PortAudio"""
     def __init__(self, size = 4096):
@@ -37,7 +35,7 @@ class Recorder(object):
         if in_data:
             self.no_data_count = 0
         else:
-            self.no_data_count++
+            self.no_data_count = self.no_data_count + 1
 
         self.ring_buffer.extend(in_data)
         data_len = chr(0) * len(in_data)
@@ -47,7 +45,7 @@ class Recorder(object):
     def open(self):
         self.stream_in = self.audio.open(
             input=True,
-            format=FORMAT
+            format=FORMAT,
             channels=CHANNELS,
             rate=RATE,
             frames_per_buffer=CHUNK,

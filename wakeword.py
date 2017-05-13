@@ -7,7 +7,7 @@ import os
 import signal
 import logging
 import RPi.GPIO as GPIO
-from recorder import recorder
+from device import recorder
 
 logging.basicConfig()
 logger = logging.getLogger("snowboy")
