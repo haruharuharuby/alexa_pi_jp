@@ -1,11 +1,17 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function
+import sys
+import os
+import wave
+import pyaudio
+import time
+import signal
+import wakeword
+from recorder import recorder
 
-from translation import speech_to_text
 
-def main():
-    speech_to_text.recognize()
-
-
-if __name__ == '__main__':
-    main()
+try:
+    recorder.open()
+    wake.start_detection()
+except KeyboardInterrupt:
+    print("ctrl-c")
+finally:
+    wake.stop_detection()
