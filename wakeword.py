@@ -7,58 +7,15 @@ import os
 import signal
 import logging
 import RPi.GPIO as GPIO
-from device import recorder
+from device import state
 
 logging.basicConfig()
 logger = logging.getLogger("snowboy")
 logger.setLevel(logging.INFO)
-TOP_DIR = os.path.dirname(os.path.abspath(__file__))
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(18, GPIO.IN)
-TOP_DIR = os.path.dirname(os.path.abspath(__file__))
-DETECT_DING = os.path.join(TOP_DIR, "resources/ding.wav")
-DETECT_DONG = os.path.join(TOP_DIR, "resources/dong.wav")
+
 RESOURCE_FILE = os.path.join(TOP_DIR, "resources/common.res")
-MODELS = ["resources/alexa.umdl", "resources/Stop.pmdl"]
 
-#
-# interrupted
-#
-def signal_handler(signal, frame):
-    global interrupted
-    interrupted = True
-
-
-def interrupt_callback():
-    global interrupted
-    return interrupted
-
-
-#
-# Wakeword detection call back methods
-#
-def alexa():
-    Player.beep(DETECT_DING)
-    print("[STATE:WAKE] detected alexa")
-
-
-def stop():
-    Player.beep(DETECT_DONG)
-    print("[STATE:WAKE] detected stop")
-
-
-callbacks = [alexa, stop]
-
-def start_detection():
-    detector = WakeWordDetector(models, sensitivity=0.5)
-    detector.start(detected_callback=callbacks, interrupt_check=interrupt_callback, sleep_time=0.03)
-
-
-def stop_detection():
-    detector.terminate()
-
-
-class WakeWordDetector(object):
+class WakeWord(object):
     def __init__(self, decoder_model,
                  resource=RESOURCE_FILE,
                  sensitivity=[],
@@ -87,16 +44,21 @@ class WakeWordDetector(object):
         if len(sensitivity) != 0:
             self.detector.SetSensitivity(sensitivity_str.encode())
 
-        self.running = True
+    def signal_handler(self, signal, frame):
+        global interrupted
+        interrupted = True
 
 
-    def start(self, detected_callback=None,
-              interrupt_check=lambda: False,
-              sleep_time=0.03):
+    def interrupt_callback(self):
+        global interrupted
+        return interrupted
+
+
+    def detect(self, data=None, detected_callback=None):
 
         if interrupt_check():
             logger.debug("detect voice return")
-            return
+            return False
 
         tc = type(detected_callback)
         if tc is not list:
@@ -108,30 +70,14 @@ class WakeWordDetector(object):
             "Error: hotwords in your models (%d) do not match the number of " \
             "callbacks (%d)" % (self.num_hotwords, len(detected_callback))
 
-        logger.debug("detecting...")
+        if len(data) == 0:
+            return False
 
-        while self.running:
-            if interrupt_check():
-                logger.debug("detect voice break")
-                break
+        ans = self.detector.RunDetection(data)
 
-            data = self.recorder.get_data()
-            if len(data) == 0:
-                time.sleep(sleep_time)
-                continue
-            ans = self.detector.RunDetection(data)
-            time.sleep(sleep_time)
-
-            if ans == -1:
-                message = "Error initializing streams or reading audio data"
-            elif ans > 0:
-                message = "Keyword " + str(ans) + " detected at time: "
-                recorder.stop()
-                detected_callback[ans-1]()
-
-
-        logger.debug("Stopped")
-
-
-    def terminate(self):
-        self.running = False
+        if ans == -1:
+            message = "Error initializing streams or reading audio data"
+        elif ans > 0:
+            message = "Keyword " + str(ans) + " detected at time: "
+            detected_callback[ans-1]()
+            return True

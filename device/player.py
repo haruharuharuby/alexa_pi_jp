@@ -39,7 +39,6 @@ class Player:
             vlc_player.set_media(media)
             vlc_player.play()
 
-    @classmethod
     def beep(audio):
         w = wave.open(audio, 'rb')
         data = w.readframes(w.getnframes())

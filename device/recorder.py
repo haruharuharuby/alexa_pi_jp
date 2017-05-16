@@ -5,7 +5,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
 AUDIO_FILE_PATH = './recording.wav'
-CHUNK = 1024
+CHUNK = 320
 
 class RingBuffer(object):
     """Ring buffer to hold audio from PortAudio"""
@@ -24,6 +24,11 @@ class RingBuffer(object):
 
 
 class Recorder(object):
+    DETECTING = "DETECTING"
+    SPEECHING = "SPEECHING"
+
+    RecorderCaptureState = DETECTING
+
     def __init__(self):
         self.audio = pyaudio.PyAudio()
         self.stream_in = None
