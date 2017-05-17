@@ -7,12 +7,12 @@ import os
 import signal
 import logging
 import RPi.GPIO as GPIO
-from device import state
 
 logging.basicConfig()
 logger = logging.getLogger("snowboy")
 logger.setLevel(logging.INFO)
 
+TOP_DIR = os.path.dirname(os.path.abspath(__file__))
 RESOURCE_FILE = os.path.join(TOP_DIR, "resources/common.res")
 
 class WakeWord(object):
@@ -29,8 +29,7 @@ class WakeWord(object):
             sensitivity = [sensitivity]
         model_str = ",".join(decoder_model)
 
-        self.detector = snowboydetect.SnowboyDetect(
-            resource_filename=resource.encode(), model_str=model_str.encode())
+        self.detector = snowboydetect.SnowboyDetect(resource, model_str)
         self.detector.SetAudioGain(audio_gain)
         self.num_hotwords = self.detector.NumHotwords()
 
@@ -42,23 +41,10 @@ class WakeWord(object):
                 "(%d) does not match" % (self.num_hotwords, len(sensitivity))
         sensitivity_str = ",".join([str(t) for t in sensitivity])
         if len(sensitivity) != 0:
-            self.detector.SetSensitivity(sensitivity_str.encode())
-
-    def signal_handler(self, signal, frame):
-        global interrupted
-        interrupted = True
-
-
-    def interrupt_callback(self):
-        global interrupted
-        return interrupted
+            self.detector.SetSensitivity(sensitivity_str)
 
 
     def detect(self, data=None, detected_callback=None):
-
-        if interrupt_check():
-            logger.debug("detect voice return")
-            return False
 
         tc = type(detected_callback)
         if tc is not list:
@@ -73,7 +59,7 @@ class WakeWord(object):
         if len(data) == 0:
             return False
 
-        ans = self.detector.RunDetection(data)
+        ans = self.detector.RunDetection(str(data))
 
         if ans == -1:
             message = "Error initializing streams or reading audio data"

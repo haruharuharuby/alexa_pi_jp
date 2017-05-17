@@ -2,34 +2,19 @@
 from __future__ import print_function
 
 import os
-import subprocess
 import time
-import RPi.GPIO as GPIO
-import threading
-from Queue import Queue
-from device_state import DeviceState
-import vlc
+import queue
+from device import vlc
 import pyaudio
 
 v = vlc.Instance()
-vlc_player = v.media_player.new()
+vlc_player = v.media_player_new()
 
 FILE_NAME = 'response.mp3'
 
 beep_device = pyaudio.PyAudio()
 
-player = Player()
-
 class Player:
-    def __init__(self):
-        self.__path = os.path.realpath(__file__).rstrip(os.path.basename(__file__))
-        self.__avs = Avs(put_audio_to_device=(lambda x: self.play(x)))
-        self.__avs.start()
-        self.__audio_queue = Queue()
-        self.__device_state = DeviceState()
-        self.__inp = None
-        self.__stop_device = False
-        self.__audio_playing = False
 
     def play(self, audio):
         if audio:

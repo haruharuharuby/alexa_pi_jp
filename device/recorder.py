@@ -54,7 +54,7 @@ class Recorder(object):
             channels=CHANNELS,
             rate=RATE,
             frames_per_buffer=CHUNK,
-            stream_callback=callback)
+            stream_callback=self.callback)
 
 
     def is_no_sound():

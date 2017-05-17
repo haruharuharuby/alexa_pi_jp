@@ -1,19 +1,18 @@
+import os
 import time
 import wakeword
-
+from device import player, recorder
 TOP_DIR = os.path.dirname(os.path.abspath(__file__))
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(18, GPIO.IN)
 DETECT_DING = os.path.join(TOP_DIR, "resources/ding.wav")
 DETECT_DONG = os.path.join(TOP_DIR, "resources/dong.wav")
 MODELS = ["resources/alexa.umdl", "resources/stop.pmdl"]
 SLEEP_TIME = 0.01
 
-player = device.player.Player()
-recorder = device.player.Recorder()
+player = player.Player()
+recorder = recorder.Recorder()
 
-hot_words = wakeword.WakeWord(decorder_model=MODELS, recorder=recorder)
-avs = alexa.Avs(recorder)
+hot_words = wakeword.WakeWord(decoder_model=MODELS)
+# avs = alexa.Avs(recorder)
 
 running = True
 
@@ -34,6 +33,7 @@ def stop(self):
 
 
 def run():
+    recorder.open()
     while running:
         data = recorder.get_data()
         hot_words.detect(data=data, detected_callback=[alexa, stop])
@@ -46,5 +46,7 @@ try:
 except KeyboardInterrupt:
     print("ctrl-c")
     running = False
-
 finally:
+    print("stopped")
+    recorder.stop()
+    recorder.terminate()
