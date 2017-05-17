@@ -3,9 +3,10 @@ from __future__ import print_function
 
 import os
 import time
-import queue
+from Queue import Queue
 from device import vlc
 import pyaudio
+import wave
 
 v = vlc.Instance()
 vlc_player = v.media_player_new()
@@ -24,7 +25,7 @@ class Player:
             vlc_player.set_media(media)
             vlc_player.play()
 
-    def beep(audio):
+    def beep(self, audio):
         w = wave.open(audio, 'rb')
         data = w.readframes(w.getnframes())
         stream_out = beep_device.open(

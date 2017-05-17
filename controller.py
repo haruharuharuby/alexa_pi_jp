@@ -18,14 +18,14 @@ running = True
 
 
 # callback when "alexa" detected.
-def alexa(self):
+def alexa():
     player.beep(DETECT_DING)
     print("[STATE:CONTROLLER] detected alexa")
 
 
 
 # callback when "stop" detected.
-def stop(self):
+def stop():
     player.beep(DETECT_DONG)
     print("[STATE:CONTROLLER] detect stop")
     recorder.terminate()

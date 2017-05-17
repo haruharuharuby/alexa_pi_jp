@@ -70,9 +70,11 @@ class Recorder(object):
 
 
     def stop(self):
-        self.stream_in.stop_stream()
+        if self.stream_in:
+            self.stream_in.stop_stream()
 
 
     def terminate(self):
-        self.stream_in.close()
+        if self.stream_in:
+            self.stream_in.close()
         self.audio.terminate()
