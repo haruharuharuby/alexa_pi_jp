@@ -12,12 +12,13 @@ This project is work in progress.
 
 # environment
 [raspbian jessie lite 2017.04.10](https://www.raspberrypi.org/downloads/raspbian/)
-python 3.6.0
+python 2.7.9
 
 # install
-    sudo apt-get install portaudio19-dev
-    sudo apt-get install python3-pyaudio
-    sudo apt-get install vlc
+    sudo apt-get update
+    sudo apt-get install vim git
+    sudo apt-get install portaudio19-dev python-pyaudio sox swig3.0 vlc
+    sudo apt-get install libatlas-base-dev
     git clone https://github.com/haruharuharuby/alexa_pi_jp.git
     cd alexa_pi_jp
     pip install -r requirements.txt
