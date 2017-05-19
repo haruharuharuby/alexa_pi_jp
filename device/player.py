@@ -29,9 +29,9 @@ class Player:
         w = wave.open(audio, 'rb')
         data = w.readframes(w.getnframes())
         stream_out = beep_device.open(
-            format=audio.get_format_from_width(w.getsampwidth()),
-            channels=w.getnchannels(),
-            rate=w.getframerate(),
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=16000,
             output=True)
 
         stream_out.write(data)
