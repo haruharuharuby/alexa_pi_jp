@@ -7,5 +7,8 @@ translation/secual-agent-jp-cd8ae87172a1.json
 __pycache__
 
 *.wav
+*.mp3
 
 .DS_Store
+creds.*
+

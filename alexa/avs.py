@@ -7,20 +7,15 @@ import json
 import threading
 from creds import *
 import time
-from Queue import Queue
 import re
-from player import player
-
-avs = Avs()
 
 class Avs:
     ENDPOINT = 'avs-alexa-na.amazon.com'
 
-    def __init__(self):
-        self.stop_signal = threading.Event()
-        self.voice_queue = Queue()
+    def __init__(self, player):
         self.access_token = None
-        self.expect_speech = False
+        self.stop = False
+        self.player = player
 
         def create_connection():
             self.connection = HTTP20Connection(host=self.ENDPOINT, secure=True, force_proto='h2', enable_push=True)
@@ -30,18 +25,14 @@ class Avs:
         def establish_downstream():
             header = {"Authorization": "Bearer %s" % (self.gettoken())}
             self.downstream_id = self.connection.request(method="GET", url=self.__interface("directives"), headers=header)
-            downstream_response = self.connection.get_response(self.downstream_id)
-            if downstream_response.status != 200:
-                raise NameError("Bad downstream response %s" % (downstream_response.status))
-            self.downstream_boundary = self.get_boundary(downstream_response)
+            stream = self.connection.get_response(self.downstream_id)
+            if stream.status != 200:
+                raise NameError("Bad downstream response %s" % (stream.status))
+            self.downstream_boundary = self.get_boundary(stream)
             print("[STATE:AVS] init downstream established. bounday=%s" % (self.downstream_boundary))
 
-            downstream_polling = threading.Thread(target=self.downstream_polling_thread)
-            downstream_polling.start()
-            print("[STATE:AVS] init downstream polling start")
 
-
-        def synchronize_to_avs():
+        def synchronize():
             boundary_name = 'synchronization-term'
             header = self.__header(boundary_name)
             stream_id = self.connection.request(method="POST", url=self.__interface("events"), headers=header, body=self.__synchronize_message(boundary_name))
@@ -50,12 +41,12 @@ class Avs:
                 raise NameError("Bad synchronize response %s" % (res.status))
             print("[STATE:AVS] init synchronize to AVS succeeded.")
 
+
         create_connection()
         establish_downstream()
-        synchronize_to_avs()
+        synchronize()
 
-        print(["start"])
-        th = threading.Thread(target=self.check_audio_arrival)
+        th = threading.Thread(target=self.downstream_polling)
         th.start()
 
 
@@ -72,45 +63,23 @@ class Avs:
         return boundary
 
 
-    def downstream_polling_thread(self):
-        def read_from_downstream(boundary, data):
-            matching_indices = [n for n, chunk in enumerate(data) if chunk.endswith(boundary)]
-            if not matching_indices:
-                return b'', data
-            boundary_index = matching_indices[-1]
-
-            new_data = data[:boundary_index+1]
-            data = data[boundary_index+1:]
-            return b''.join(new_data), data
-
-        downstream = self.connection.streams[self.downstream_id]
-
-        while self.stop_signal.is_set() == False:
-            if len(downstream.data) > 1:
-                new_data, downstream.data = read_from_downstream(self.downstream_boundary, downstream.data)
-                if len(new_data) > 0:
-                    print("response:" + new_data)
-            time.sleep(0.5)
+    def downstream_polling(self):
+        while self.stop == False:
+            try:
+                response = self.connection.get_response(self.downstream_id)
+                if response:
+                    print(response)
+                    data = response.read(decode_content=False)
+                    print(data)
+            except Exception as e:
+                ee = "not impl"
+                #print(e)
+            time.sleep(0.05)
+            #print("[AVS:STATE] checking downstream")
 
 
-    def put_audio(self, audio):
-        print("[STATE:AVS] customer voice arrival")
-        self.voice_queue.put(audio)
+    def send(self, customer_voice):
 
-
-    def check_audio_arrival(self):
-        while self.stop_signal.is_set() == False:
-            if self.voice_queue.empty() == False:
-                print("[STATE:AVS] detected audio arrival")
-                audio = self.voice_queue.get()
-                rf = open('recording.wav', 'w')
-                rf.write(audio)
-                rf.close()
-                self.recognize()
-            time.sleep(0.1)
-
-
-    def recognize(self):
         boundary_name = 'recognize-term'
         header = self.__header(boundary_name)
 
@@ -123,7 +92,7 @@ class Avs:
                       "dialogRequestId": "1"
                   },
                   "payload": {
-                      "profile": "CLOSE_TALK",
+                      "profile": "NEAR_FIELD",
                       "format": "AUDIO_L16_RATE_16000_CHANNELS_1"
                   }
             }
@@ -132,11 +101,10 @@ class Avs:
         first_part_header = self.__message_header_first(boundary_name)
         first_part_body = self.__message_body_first([], recognize_first_message())
         second_part_header = self.__message_header_second(boundary_name)
-        second_part_body = self.__message_body_second("recording.wav")
+        second_part_body = self.__message_body_second(customer_voice)
 
         body = first_part_header + '\n' + json.dumps(first_part_body) + '\n' + second_part_header + '\n' + second_part_body + self.__end_boundary(boundary_name)
         stream_id = self.connection.request(method="GET", url=self.__interface("events"), headers=header, body=body)
-        print(stream_id)
         res = self.connection.get_response(stream_id)
         if res.status != 200 and res.status != 204:
             print(res.read())
@@ -148,37 +116,15 @@ class Avs:
             print("[STATE:AVS] recognize no content")
             print(res.headers)
             print(res.read())
-            # self.expect_speech = False
             audio = None
         else:
             print("[STATE:AVS] recognize audio response present")
             boundary = self.get_boundary(res)
             response_data = res.read()
             ar = self.analyze_response(boundary, response_data)
-            self.change_state(ar)
             audio = ar['audio']
 
-        player.play(audio)
-
-
-    def is_expect_speech(self):
-        print("[STATE:AVS] expect speech %s" % (self.expect_speech))
-        return self.expect_speech
-
-
-    def change_state(self, ar):
-        def is_expect_speech_internal(x):
-            return isinstance(x, dict) and x[u'directive'][u'header'][u'namespace'] == u'SpeechRecognizer' and x[u'directive'][u'header'][u'name'] == u'ExpectSpeech'
-
-        expect_speech = [x for x in ar['directives'] if is_expect_speech_internal(x)]
-        self.expect_speech = (expect_speech is not None and len(expect_speech) > 0)
-
-
-    def put_audio_to_device(self, audio):
-        if self.put_audio_to_device_callback is not None:
-            self.put_audio_to_device_callback(audio)
-        else:
-            print("[STATE:AVS] for play device not assigned")
+        self.player.play(audio)
 
 
     def analyze_response(self, boundary, data):
@@ -204,7 +150,7 @@ class Avs:
 
 
     def close(self):
-        self.stop_signal.set()
+        self.stop = True
         self.connection.close()
 
 
@@ -271,9 +217,7 @@ class Avs:
         return message
 
 
-    def __message_body_second(self, file):
-        with open(file, "rb") as inf:
-            data = inf.read()
+    def __message_body_second(self, data):
         return data
 
 

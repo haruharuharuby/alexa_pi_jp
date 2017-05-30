@@ -21,7 +21,7 @@ class Player:
         if audio:
             with open(FILE_NAME, 'wb') as f:
                 f.write(audio)
-            media = instance.media_new(FILE_NAME)
+            media = v.media_new(FILE_NAME)
             vlc_player.set_media(media)
             vlc_player.play()
 

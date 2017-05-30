@@ -4,5 +4,7 @@ google-cloud-translate
 boto3
 RPi.GPIO
 pyaudio
-CherryPy
+CherryPy==8.0.0
+wsgiref
 Requests
+hyper

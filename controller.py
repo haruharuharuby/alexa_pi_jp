@@ -2,6 +2,7 @@ import os
 import time
 import wakeword
 from device import player, recorder
+from alexa import avs
 TOP_DIR = os.path.dirname(os.path.abspath(__file__))
 DETECT_DING = os.path.join(TOP_DIR, "resources/ding.wav")
 DETECT_DONG = os.path.join(TOP_DIR, "resources/dong.wav")
@@ -12,33 +13,21 @@ player = player.Player()
 recorder = recorder.Recorder()
 
 hot_words = wakeword.WakeWord(decoder_model=MODELS)
-# avs = alexa.Avs(recorder)
+avs = avs.Avs(player)
 
 running = True
 
 
-# callback when "alexa" detected.
-def alexa():
-    player.beep(DETECT_DING)
-    print("[STATE:CONTROLLER] detected alexa")
-
-
-
-# callback when "stop" detected.
-def stop():
-    player.beep(DETECT_DONG)
-    print("[STATE:CONTROLLER] detect stop")
-    recorder.terminate()
-    player.terminate()
-
+def detected():
+    print("DETECTED")
 
 def run():
     recorder.open()
     while running:
         data = recorder.get_data()
-        hot_words.detect(data=data, detected_callback=[alexa, stop])
-        time.sleep(SLEEP_TIME)
-
+        if len(data) != 0:
+            avs.send(data)
+        #time.sleep(0.01)
 
 
 try:
@@ -48,5 +37,6 @@ except KeyboardInterrupt:
     running = False
 finally:
     print("stopped")
+    avs.close()
     recorder.stop()
     recorder.terminate()
