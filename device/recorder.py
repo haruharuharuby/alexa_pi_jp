@@ -8,7 +8,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
 CHUNK = 1024 
-THRESHOLD = 2500
+THRESHOLD = 2500 
 
 class RingBuffer(object):
     """Ring buffer to hold audio from PortAudio"""

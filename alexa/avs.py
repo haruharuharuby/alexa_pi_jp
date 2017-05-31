@@ -80,6 +80,9 @@ class Avs:
 
     def send(self, customer_voice):
 
+        if not customer_voice:
+            return None
+
         boundary_name = 'recognize-term'
         header = self.__header(boundary_name)
 

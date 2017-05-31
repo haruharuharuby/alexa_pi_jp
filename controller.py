@@ -1,6 +1,7 @@
 import os
 import time
 import wakeword
+from translation import speech 
 from device import player, recorder
 from alexa import avs
 TOP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,7 +27,8 @@ def run():
     while running:
         data = recorder.get_data()
         if len(data) != 0:
-            avs.send(data)
+            translated_voice = speech.recognize(data)
+            avs.send(translated_voice)
         #time.sleep(0.01)
 
 
