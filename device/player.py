@@ -7,23 +7,26 @@ from Queue import Queue
 from device import vlc
 import pyaudio
 import wave
+import subprocess
 
 v = vlc.Instance()
 vlc_player = v.media_player_new()
 
 FILE_NAME = 'response.mp3'
+TMP_FILE_NAME = 'tmp_response.wav'
 
 beep_device = pyaudio.PyAudio()
 
 class Player:
 
-    def play(self, audio):
-        if audio:
-            with open(FILE_NAME, 'wb') as f:
-                f.write(audio)
-            media = v.media_new(FILE_NAME)
-            vlc_player.set_media(media)
-            vlc_player.play()
+    def play(self, audio, convert=True):
+        if not audio:
+            return
+        with open(FILE_NAME, 'wb') as f:
+            f.write(audio)
+        media = v.media_new(FILE_NAME)
+        vlc_player.set_media(media)
+        vlc_player.play()
 
     def beep(self, audio):
         w = wave.open(audio, 'rb')

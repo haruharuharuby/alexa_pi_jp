@@ -19,6 +19,7 @@ python 2.7.9
     sudo apt-get install vim git
     sudo apt-get install portaudio19-dev python-pyaudio sox swig3.0 vlc
     sudo apt-get install libatlas-base-dev
+    sudo apt-get install libsox-fmt-mp3
     git clone https://github.com/haruharuharuby/alexa_pi_jp.git
     cd alexa_pi_jp
     pip install -r requirements.txt

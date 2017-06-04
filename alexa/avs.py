@@ -126,8 +126,9 @@ class Avs:
             response_data = res.read()
             ar = self.analyze_response(boundary, response_data)
             audio = ar['audio']
-
-        self.player.play(audio)
+            #print(audio) 
+        #iself.player.play(audio)
+        return audio
 
 
     def analyze_response(self, boundary, data):

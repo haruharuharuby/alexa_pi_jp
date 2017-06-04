@@ -14,26 +14,23 @@ logger.setLevel(logging.INFO)
 
 TOP_DIR = os.path.dirname(os.path.abspath(__file__))
 RESOURCE_FILE = os.path.join(TOP_DIR, "resources/common.res")
+HOTWORDS = ['resources/alexa.umdl','resources/ittekimasu.pmdl','resources/tadaima.pmdl']
 
 class WakeWord(object):
-    def __init__(self, decoder_model,
-                 resource=RESOURCE_FILE,
+    def __init__(self, resource=RESOURCE_FILE,
                  sensitivity=[],
                  audio_gain=1):
 
-        tm = type(decoder_model)
         ts = type(sensitivity)
-        if tm is not list:
-            decoder_model = [decoder_model]
         if ts is not list:
             sensitivity = [sensitivity]
-        model_str = ",".join(decoder_model)
+        model_str = ",".join(HOTWORDS)
 
         self.detector = snowboydetect.SnowboyDetect(resource, model_str)
         self.detector.SetAudioGain(audio_gain)
         self.num_hotwords = self.detector.NumHotwords()
 
-        if len(decoder_model) > 1 and len(sensitivity) == 1:
+        if len(HOTWORDS) > 1 and len(sensitivity) == 1:
             sensitivity = sensitivity*self.num_hotwords
         if len(sensitivity) != 0:
             assert self.num_hotwords == len(sensitivity), \
@@ -44,26 +41,17 @@ class WakeWord(object):
             self.detector.SetSensitivity(sensitivity_str)
 
 
-    def detect(self, data=None, detected_callback=None):
-
-        tc = type(detected_callback)
-        if tc is not list:
-            detected_callback = [detected_callback]
-        if len(detected_callback) == 1 and self.num_hotwords > 1:
-            detected_callback *= self.num_hotwords
-
-        assert self.num_hotwords == len(detected_callback), \
-            "Error: hotwords in your models (%d) do not match the number of " \
-            "callbacks (%d)" % (self.num_hotwords, len(detected_callback))
+    def detect(self, data=None):
 
         if len(data) == 0:
-            return False
+            return -1 
 
-        ans = self.detector.RunDetection(str(data))
+        ans = self.detector.RunDetection(data)
 
         if ans == -1:
             message = "Error initializing streams or reading audio data"
+            print(message)
+            return ans
         elif ans > 0:
             message = "Keyword " + str(ans) + " detected at time: "
-            detected_callback[ans-1]()
-            return True
+            return ans 
